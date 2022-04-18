@@ -112,14 +112,15 @@ def enroll(request, course_id):
          # Redirect to show_exam_result with the submission id
 def submit(request, course_id):
     user = request.user
-    course = course_id
-    enrollment = Enrollment.objects.get(user=user, course=course)
-    submission = Submission.objects.create(enrollment=enrollment)
-    answers = extract_answers(request)
-    submission.choices.set(answers)
-    return HttpResponseRedirect(reverse(viewname='onlinecourse:show_exam_result',
-                                        args=(course.id, submission.id,)
-                                        ))
+    course = get_object_or_404(Course, pk=course_id)
+    enroll = Enrollment.objects.filter(user=user, course=course).get()
+    choices = extract_answers(request)
+    submission = Submission.objects.create(enrollment_id = enroll.id )
+    for choice in choices:
+        c = Choice.objects.filter(id = int(choice)).get()
+        submission.choices.add(c)
+    submission.save()         
+    return HttpResponseRedirect(reverse(viewname='onlinecourse:show_exam_result', args=(course.id,submission.id ))) 
 
 
 
@@ -141,15 +142,37 @@ def extract_answers(request):
         # For each selected choice, check if it is a correct answer or not
         # Calculate the total score
 def show_exam_result(request, course_id, submission_id):
-    course = course_id
-    submission = submission_id
-    choices = submission.choices.all()
-    total_score = 0
-    for question in course.question_set.all():
-        total_score += question.grade
+    context = {}
+    user = request.user
+    course = Course.objects.get(id = course_id)
+    submit = Submission.objects.get(id = submission_id)
+    selected = Submission.objects.filter(id = submission_id).values_list('choices',flat = True)
+    score = 0
+    correct = [0,0] * 10
+
+    questions = Question.objects.values_list('question_text')
         
-    return render(request, 'onlinecourse/exam_result_bootstrap.html', 
-                            {"course:course"})
+    question_count=Question.objects.filter(lesson=course).count()
+    for q in range(question_count+1):
+        r = q+1
+        all_q = submit.choices.all().filter(question = q)
+        for a in all_q:
+            if a in submit.choices.all().filter(is_correct=True):
+                if correct[q] == 1:
+                    correct[q] = 1
+                else:
+                    correct[q] = correct[q] + 1
+            else:
+                correct[q] = 0
+        score = score + correct[q]
+
+    context['user'] = user
+    context['selected'] = selected
+    context['grade'] = int((score/question_count) * 100)
+    context['course'] = course
+    context['question_text'] = questions
+    return  render(request, 'onlinecourse/exam_result_bootstrap.html', context)
+
 
 
 

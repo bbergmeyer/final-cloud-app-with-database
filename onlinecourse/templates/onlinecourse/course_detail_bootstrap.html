@@ -25,7 +25,6 @@
                 {% else %}
                 <li>
                     <form class="form-inline" action="{% url 'onlinecourse:login' %}" method="post">
-                        {% csrf_token %}
                         <div class="input-group">
                             <input type="text" class="form-control" placeholder="Username" name="username" >
                             <input type="password" class="form-control" placeholder="Username" name="psw" >
@@ -53,33 +52,35 @@
 
             {% if user.is_authenticated%}
 
-            <button class="btn btn-primary btn-block" data-toggle="collapse" data-target="#exam">Start Exam</button>
+            <button data-toggle="collapse" data-target="#exam">Show Course Exam</button>
             <div id="exam" class="collapse">
-                <form id="questionform" action="{% url 'onlinecourse:submit' course.id %}" method="post">
-                <!--... for each question in the course ...-->
+                <!-- <HINT> Create a form to collect the selected choices for all questions -->
+                <!-- <HINT> For each question choice, you may create a checkbox input like
+                <input type="check" name="choice_{{choice.id}}" id="{{choice.id}}" ...>
+                -->
+                <form id="questionform" action="submit/" method="post">
                     {% for question in course.question_set.all %}
-                    <div class="card mt-1">
-                        <div class="card-header"><h5>{{ question.question_text}}</h5></div>
-                            {% csrf_token %}
-                            <div class="form-group">
-                               <!--... for each choice in the question ...-->
-                               {% for choice in question.choice_set.all %}
-                                <div class="form-check">
-                                    <label class="form-check-label">
-                                        <input type="checkbox" name="choice_{{choice.id}}"
-                                               class="form-check-input" id="{{choice.id}}"
-                                               value="{{choice.id}}">{{ choice.choice_text }}
-                                    </label>
+                            <div class="card mt-1">
+                                <div class="card-header"><h5>{{ question.question_text}}</h5></div>
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    {% for choice in question.choice_set.all %}
+                                    <div class="form-check">
+                                        <label class="form-check-label">
+                                            <input type="checkbox" name="choice_{{choice.id}}"
+                                                class="form-check-input" id="{{choice.id}}"
+                                                value="{{choice.id}}">{{ choice.choice_text }}
+                                        </label>
+                                    </div>
+                                    {% endfor%}
                                 </div>
-                                {% endfor %}
                             </div>
-                        </div>
-                    </div>
                     {% endfor %}
-                    <input class="btn btn-success btn-block" type="submit" value="Submit">
-                </form> 
-            </div>
-            {% endif %}
+                        <input class="btn btn-success btn-block" type="submit" value="Submit">
+                </form>
+                </div>
+                {% endif %}
+
     </div>
 </body>
 </html>
